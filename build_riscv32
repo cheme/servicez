@@ -1,0 +1,4 @@
+zig build -Dtarget=riscv32-freestanding -Dcpu=generic_rv32+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseFast
+#zig build -Dtarget=riscv32-freestanding -Dcpu=generic_rv32+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseSmall
+#zig build -Dtarget=riscv32-freestanding -Dcpu=generic_rv32+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseSafe # wrong dwarf
+#zig build -Dtarget=riscv32-freestanding -Dcpu=generic_rv32+e+m+a+c+zbb+xtheadcondmov-zca # substracting zca remove c too, since c implies zca should be fine

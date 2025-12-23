@@ -1,19 +1,18 @@
 const std = @import("std");
 
-pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
-    const mod = b.addModule("servicez", .{
-        .root_source_file = b.path("src/lib.zig"),
-        .target = target,
-    });
-
+fn exeExample(
+    b: *std.Build,
+    name: [:0]const u8,
+    main: [:0]const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    mod: *std.Build.Module,
+) void {
     const test_z_exe = b.addExecutable(.{
-        .name = "test_z",
+        .name = name,
 
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/guests/test_z.zig"),
+            .root_source_file = b.path(main),
             .target = target,
             .optimize = optimize,
             .pic = true,
@@ -38,6 +37,19 @@ pub fn build(b: *std.Build) void {
     //test_z_exe.link_z_max_page_size =
 
     b.installArtifact(test_z_exe);
+}
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const mod = b.addModule("servicez", .{
+        .root_source_file = b.path("src/lib.zig"),
+        .target = target,
+    });
+
+    exeExample(b, "test_z", "src/guests/test_z.zig", target, optimize, mod);
+    exeExample(b, "example-hello-world", "src/guests/example-hello-world.zig", target, optimize, mod);
 
     //const tools_step = b.step("tools", "Compiles all tools required in the build process");
     //tools_step.dependOn(&test_z_exe.step);

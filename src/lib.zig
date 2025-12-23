@@ -4,7 +4,15 @@ pub const scale = @import("scale.zig");
 pub const utils = @import("utils.zig");
 pub const jam = @import("jam.zig");
 
+pub const zig_version_api = 0;
+
 const riscv32 = builtin.target.cpu.arch == .riscv32; // * 2 on riscv64
+
+pub const Reg = if (riscv32) u32 else u64; // * 2 on riscv64
+pub const ReturnTy = if (riscv32) u64 else u128; // * 2 on riscv64
+// thats two reg packed sa
+// const SHIFT: usize = core::mem::size_of::<Reg>() * 8;
+// (a0 as ReturnTy) | ((a1 as ReturnTy) << SHIFT)
 
 pub const ExternMetadata = struct {
     //const ExternMetadata = packed struct {
@@ -85,9 +93,30 @@ pub fn metaExports(exs: []const ExportDef) []const u8 {
     ;
 }
 
+//pub fn metaImports(exs: []const ExportDef) []const u8 {
+//    var r: []const u8 =
+//        \\.pushsection .polkavm_import,"R",@note
+//        \\
+//    ;
+//    inline for (exs) |e| {
+//        r = r ++ e.meta();
+//    }
+//
+//    return r ++
+//        \\
+//        \\.popsection
+//    ;
+//}
+
 pub fn exportExports(exs: []const ExportDef) void {
     inline for (exs) |e| {
         @export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_export." ++ e.name, .linkage = .strong });
+        @export(&e.T.metadata, .{ .name = e.name ++ "_METADATA", .section = ".polkavm_metadata", .linkage = .strong });
+    }
+}
+pub fn exportImports(exs: []const ExportDef) void {
+    inline for (exs) |e| {
+        @export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_import." ++ e.name, .linkage = .strong });
         @export(&e.T.metadata, .{ .name = e.name ++ "_METADATA", .section = ".polkavm_metadata", .linkage = .strong });
     }
 }

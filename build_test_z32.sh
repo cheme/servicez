@@ -1,6 +1,9 @@
 cd polkavm
-cargo build --release
+cargo build --release -p polkatool
 cd ..
 bash build_riscv32
 mkdir -p guests_out
 ./polkavm/target/release/polkatool link  ./zig-out/bin/test_z -o guests_out/test_z32.pvm
+./polkavm/target/release/polkatool link  ./zig-out/bin/example-hello-world -o polkavm/guest-programs/output/example-hello-world.polkavm
+cd polkavm
+cargo run -p hello-world-host

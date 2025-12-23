@@ -13,16 +13,12 @@ const mod_jam = servicez.jam;
 const AuthParams = mod_jam.AuthParams;
 const BoundedArray = utils.BoundedArray;
 const typeApply = mod_scale.typeApply;
-
-const zig_version_api = 0;
+const ReturnTy = servicez.ReturnTy;
+const Reg = servicez.Reg;
+const zig_version_api = servicez.zig_version_api;
 
 const riscv64 = builtin.target.cpu.arch == .riscv64; // * 2 on riscv64
 const riscv32 = builtin.target.cpu.arch == .riscv32; // * 2 on riscv64
-const Reg = if (riscv32) u32 else u64; // * 2 on riscv64
-const ReturnTy = if (riscv32) u64 else u128; // * 2 on riscv64
-// thats two reg packed sa
-// const SHIFT: usize = core::mem::size_of::<Reg>() * 8;
-// (a0 as ReturnTy) | ((a1 as ReturnTy) << SHIFT)
 
 fn refineExt(ptr: u32, size: u32) callconv(.c) u64 {
     _ = ptr;
@@ -160,7 +156,7 @@ const IsAuthorizedExt = struct {
         ._filler = 0,
     });
 
-    // 1 compacte is 0 as type and 1 << 2 (type on 2 bit
+    // 1 compact is 0 as type and 1 << 2 (type on 2 bit
     const ok_auth: [3]u8 = .{ 1, 1 << 2, 1 };
     const ko_auth: [3]u8 = .{ 1, 1 << 2, 0 };
     const err_auth: [1]u8 = .{0};

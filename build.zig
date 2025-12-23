@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
-    const exe = b.addExecutable(.{
+    const test_z_exe = b.addExecutable(.{
         .name = "test_z",
 
         .root_module = b.createModule(.{
@@ -26,26 +26,30 @@ pub fn build(b: *std.Build) void {
         .use_lld = true,
     });
 
-    exe.link_emit_relocs = true; // emit reloc needed for polkavm linker
-    exe.pie = true;
-    exe.lto = .none;
-    exe.entry = .{ .symbol_name = "run" };
-    exe.discard_local_symbols = true;
-    exe.link_z_notext = true;
-    //exe.link_z_lazy = false;
-    //exe.link_z_notext = true;
-    //exe.link_z_lazy = true;
-    //exe.link_z_max_page_size =
+    test_z_exe.link_emit_relocs = true; // emit reloc needed for polkavm linker
+    test_z_exe.pie = true;
+    test_z_exe.lto = .none;
+    test_z_exe.entry = .{ .symbol_name = "run" };
+    test_z_exe.discard_local_symbols = true;
+    test_z_exe.link_z_notext = true;
+    //test_z_exe.link_z_lazy = false;
+    //test_z_exe.link_z_notext = true;
+    //test_z_exe.link_z_lazy = true;
+    //test_z_exe.link_z_max_page_size =
 
-    b.installArtifact(exe);
-    const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    b.installArtifact(test_z_exe);
 
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
+    //const tools_step = b.step("tools", "Compiles all tools required in the build process");
+    //tools_step.dependOn(&test_z_exe.step);
+
+    //    const run_cmd = b.addRunArtifact(test_z_exe);
+    //    run_cmd.step.dependOn(b.getInstallStep());
+    //    if (b.args) |args| {
+    //        run_cmd.addArgs(args);
+    //    }
+    //
+    //    const run_step = b.step("run", "Run the app");
+    //    run_step.dependOn(&run_cmd.step);
 
     const lib_unit_tests = b.addTest(.{
         .root_module = b.createModule(.{

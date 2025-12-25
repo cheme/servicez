@@ -6,7 +6,7 @@ pub const jam = @import("jam.zig");
 
 pub const zig_version_api = 0;
 
-const riscv32 = builtin.target.cpu.arch == .riscv32; // * 2 on riscv64
+pub const riscv32 = builtin.target.cpu.arch == .riscv32; // * 2 on riscv64
 
 pub const Reg = if (riscv32) u32 else u64; // * 2 on riscv64
 pub const ReturnTy = if (riscv32) u64 else u128; // * 2 on riscv64
@@ -22,12 +22,12 @@ pub const ExternMetadata = struct {
     symbol: []const u8,
     input_regs: u8,
     output_regs: u8,
-    _filler: u8,
+    index: ?u32 = null,
 };
 
 pub fn ExternMetadataC(symbol_len: comptime_int) type {
     return extern struct {
-        pub const encoded_size = symbol_len + 11;
+        pub const encoded_size = symbol_len + 16;
         //data: [@sizeOf(ExternMetadata)]u8,
         data: [encoded_size]u8,
     };
@@ -56,7 +56,17 @@ pub fn metaToExtern(meta: ExternMetadata) ExternMetadataC(meta.symbol_length) {
         data[d_ix] = meta.input_regs;
         d_ix += 1;
         data[d_ix] = meta.output_regs;
-
+        d_ix += 1;
+        if (meta.index) |i| {
+            data[d_ix] = 1;
+            // TODO likely byte ordering issue here
+            data[d_ix + 1] = @intCast(i << 24 >> 24);
+            data[d_ix + 2] = @intCast(i << 16 >> 24);
+            data[d_ix + 3] = @intCast(i << 8 >> 24);
+            data[d_ix + 4] = @intCast(i >> 24);
+        } else {
+            for (0..5) |i| data[d_ix + i] = 0;
+        }
         return .{ .data = data };
     }
 }
@@ -93,20 +103,26 @@ pub fn metaExports(exs: []const ExportDef) []const u8 {
     ;
 }
 
-//pub fn metaImports(exs: []const ExportDef) []const u8 {
-//    var r: []const u8 =
-//        \\.pushsection .polkavm_import,"R",@note
-//        \\
-//    ;
-//    inline for (exs) |e| {
-//        r = r ++ e.meta();
-//    }
-//
-//    return r ++
-//        \\
-//        \\.popsection
-//    ;
-//}
+pub fn metaImports(exs: []const ExportDef) []const u8 {
+    // check unique indexes, expect small number of imports
+    comptime {
+        for (exs, 0..) |import1, i|
+            for (exs[i + 1 ..]) |import2|
+                if (import1.T.index == import2.T.index) @compileError("duplicated import index");
+    }
+    var r: []const u8 =
+        \\.pushsection .polkavm_imports,"R",@note
+        \\
+    ;
+    inline for (exs) |e| {
+        r = r ++ e.meta();
+    }
+
+    return r ++
+        \\
+        \\.popsection
+    ;
+}
 
 pub fn exportExports(exs: []const ExportDef) void {
     inline for (exs) |e| {
@@ -116,7 +132,7 @@ pub fn exportExports(exs: []const ExportDef) void {
 }
 pub fn exportImports(exs: []const ExportDef) void {
     inline for (exs) |e| {
-        @export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_import." ++ e.name, .linkage = .strong });
+        //@export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_import" ++ e.name, .linkage = .strong });
         @export(&e.T.metadata, .{ .name = e.name ++ "_METADATA", .section = ".polkavm_metadata", .linkage = .strong });
     }
 }

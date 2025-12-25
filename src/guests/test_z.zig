@@ -115,7 +115,6 @@ const RefineExt = struct {
         //.symbol = "refine_ext",
         .input_regs = 2,
         .output_regs = 1,
-        ._filler = 0,
     });
 };
 
@@ -128,7 +127,6 @@ const ParamAllocExt = struct {
         .symbol = metadata_symbol,
         .input_regs = 1,
         .output_regs = 1,
-        ._filler = 0,
     });
 
     pub fn trampoline(
@@ -153,7 +151,6 @@ const IsAuthorizedExt = struct {
         .symbol = metadata_symbol,
         .input_regs = 1,
         .output_regs = 1,
-        ._filler = 0,
     });
 
     // 1 compact is 0 as type and 1 << 2 (type on 2 bit

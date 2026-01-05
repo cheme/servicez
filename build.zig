@@ -28,6 +28,7 @@ fn exeExample(
     test_z_exe.link_emit_relocs = true; // emit reloc needed for polkavm linker
     test_z_exe.pie = true;
     test_z_exe.lto = .none;
+    // TODO could skip it (at least not define in example produce ok output?)
     test_z_exe.entry = .{ .symbol_name = "run" };
     test_z_exe.discard_local_symbols = true;
     test_z_exe.link_z_notext = true;
@@ -50,6 +51,7 @@ pub fn build(b: *std.Build) void {
 
     exeExample(b, "test_z", "src/guests/test_z.zig", target, optimize, mod);
     exeExample(b, "example-hello-world", "src/guests/example-hello-world.zig", target, optimize, mod);
+    exeExample(b, "mt", "src/guests/mt.zig", target, optimize, mod);
 
     //const tools_step = b.step("tools", "Compiles all tools required in the build process");
     //tools_step.dependOn(&test_z_exe.step);

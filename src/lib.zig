@@ -7,9 +7,16 @@ pub const jam = @import("jam.zig");
 pub const zig_version_api = 0;
 
 pub const riscv32 = builtin.target.cpu.arch == .riscv32; // * 2 on riscv64
+pub const riscv64 = builtin.target.cpu.arch == .riscv64;
 
+// TODO actually incorrect: just get from builtin
+pub const is_freestanding = riscv32 or riscv64;
+
+// TODO should be is_32 (not just riscv32)
 pub const Reg = if (riscv32) u32 else u64; // * 2 on riscv64
+// TODO should be is_32 (not just riscv32)
 pub const ReturnTy = if (riscv32) u64 else u128; // * 2 on riscv64
+
 // thats two reg packed sa
 // const SHIFT: usize = core::mem::size_of::<Reg>() * 8;
 // (a0 as ReturnTy) | ((a1 as ReturnTy) << SHIFT)
@@ -73,6 +80,7 @@ pub fn metaToExtern(meta: ExternMetadata) ExternMetadataC(meta.symbol_length) {
 
 pub const ExportDef = struct {
     T: type,
+    // TODO name from T. symbol?
     name: []const u8,
 
     fn meta(self: ExportDef) []const u8 {
@@ -132,10 +140,16 @@ pub fn exportExports(exs: []const ExportDef) void {
 }
 pub fn exportImports(exs: []const ExportDef) void {
     inline for (exs) |e| {
-        //@export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_import" ++ e.name, .linkage = .strong });
+        // TODO should not need this, try remove frme e.meta in metaImport
+        @export(&e.T.trampoline, .{ .name = e.name ++ "_trampoline", .section = ".text.polkavm_import" ++ e.name, .linkage = .strong });
         @export(&e.T.metadata, .{ .name = e.name ++ "_METADATA", .section = ".polkavm_metadata", .linkage = .strong });
     }
 }
+
+pub const ConsoleStream = enum(comptime_int) {
+    stdout = 1,
+    stderr = 2,
+};
 
 test "compact_integers_encoded_as_expected" {
     const expectEqual = std.testing.expectEqual;

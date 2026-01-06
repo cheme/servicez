@@ -4,5 +4,6 @@ cargo build -p polkatool
 cd ..
 bash build_riscv64
 mkdir -p guests_out
-./polkavm/target/release/polkatool link  ./zig-out/bin/test_z -o guests_out/test_z64.pvm
-./polkavm/target/release/polkatool link  ./zig-out/bin/mt -o guests_out/mt.pvm
+./polkavm/target/debug/polkatool link  ./zig-out/bin/test_z -o guests_out/test_z64.pvm
+./polkavm/target/debug/polkatool link  ./zig-out/bin/example-hello-world -o  guests_out/hello64.pvm
+./polkavm/target/debug/polkatool link  ./zig-out/bin/mt -o guests_out/mt64.pvm

@@ -107,8 +107,7 @@ const WriteConsoleData = struct {
         .output_regs = 0,
         .index = index,
     });
-    // TODO should use @export like for exports.
-    pub noinline fn trampoline(
+    pub fn trampoline(
         stream: Reg,
         address: Reg,
         len: Reg,
@@ -117,7 +116,8 @@ const WriteConsoleData = struct {
         a5: Reg,
     ) callconv(.c) ReturnTy {
         _ = .{ a3, a4, a5 };
-        _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ "\n"
+        const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
+        _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
             : [ret] "=rdi" (-> ReturnTy), // TODO rather void ret or use other reg
             : [a0] "rdi" (stream),
               [a1] "rax" (address),

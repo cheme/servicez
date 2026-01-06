@@ -49,30 +49,10 @@ const MainExt = struct {
         a5: Reg,
     ) callconv(.c) ReturnTy {
         _ = .{ a0, a1, a2, a3, a4, a5 };
-        var rng = SmallRng.init(0);
-        const pages = generatePages(&rng);
-        const fmt_msg = "{} {} {} {}";
-        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
-        // Touch random pages until we ran out of exported pages.
-        // Compute checksums and append them to the program output.
-        for (0..num_pages) |_| {
-            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
-            const data = &pages[j][0];
-            const expected_checksum = pages[j][1];
-            const actual_checksum = pageChecksum(data);
-            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
-            if (comptime servicez.is_freestanding) {
-                var writer = consoleDataWriter(&buffer);
-                // TODO proper error?
-                writer.print(fmt_msg, fmt_param) catch unreachable;
-            } else {
-                //    var buffer: [64]u8 = undefined;
-                //    const bw, _ = lockStderrWriter(&buffer);
-                //    defer unlockStderrWriter();
-                //    nosuspend bw.print(fmt, args) catch return;
-                std.debug.print(fmt_msg, fmt_param);
-            }
-        }
+        const bytes: []const u8 = "helloword"[0..];
+        const stream: servicez.ConsoleStream = .stdout;
+        const bytes_ptr: *const u8 = @ptrCast(bytes);
+        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
 
         return 0;
     }
@@ -116,13 +96,25 @@ const WriteConsoleData = struct {
         a4: Reg,
         a5: Reg,
     ) callconv(.c) ReturnTy {
+        _ = stream; // autofix
+        _ = address; // autofix
+        _ = len; // autofix
         _ = .{ a3, a4, a5 };
+        const b1: u64 = 1;
+        const b2: u64 = 2;
+        const b3: u64 = 3;
+        const b4: u64 = 4;
+        const b5: u64 = 5;
+        const b6: u64 = 6;
         const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
         _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
             : [ret] "=rdi" (-> ReturnTy), // TODO rather void ret or use other reg
-            : [a0] "rdi" (stream),
-              [a1] "rax" (address),
-              [a2] "rdx" (len),
+            : [a0] "rdi" (b1),
+              [a1] "rax" (b2),
+              [a2] "rdx" (b3),
+              [a3] "rbp" (b4),
+              [a4] "r10" (b5),
+              [a5] "r11" (b6),
             : .{});
         return 0;
     }

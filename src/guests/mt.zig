@@ -96,26 +96,26 @@ const WriteConsoleData = struct {
         a4: Reg,
         a5: Reg,
     ) callconv(.c) ReturnTy {
-        _ = stream; // autofix
-        _ = address; // autofix
-        _ = len; // autofix
-        _ = .{ a3, a4, a5 };
-        const b1: u64 = 1;
-        const b2: u64 = 2;
-        const b3: u64 = 3;
-        const b4: u64 = 4;
-        const b5: u64 = 5;
-        const b6: u64 = 6;
+        _ = a3; // autofix
+        _ = a4; // autofix
+        _ = a5; // autofix
         const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
+        // force ordering of reg (wth)
+        _ = asm volatile ("mv a0, %[stream]\n"
+            : [ret] "=rdi" (-> ReturnTy),
+            : [stream] "r" (stream),
+            : .{});
+
         _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
             : [ret] "=rdi" (-> ReturnTy), // TODO rather void ret or use other reg
-            : [a0] "rdi" (b1),
-              [a1] "rax" (b2),
-              [a2] "rdx" (b3),
-              [a3] "rbp" (b4),
-              [a4] "r10" (b5),
-              [a5] "r11" (b6),
+            : [stream] "r" (stream),
+              [address] "r" (address),
+              [len] "r" (len),
+              //              [a3] "r" (a3),
+              //              [a4] "r" (a4),
+              //              [a5] "r" (a5),
             : .{});
+
         return 0;
     }
 };
@@ -139,7 +139,7 @@ comptime {
 
 pub fn writeConsoleData(stream: servicez.ConsoleStream, bytes: []const u8) void {
     const bytes_ptr: *const u8 = @ptrCast(bytes);
-    _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
+    _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 3, 4, 5);
     return;
 }
 

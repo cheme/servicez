@@ -17,6 +17,7 @@ pub const page_size: usize = 4096;
 pub const max_pages: usize = 100;
 
 pub const num_pages: usize = max_pages * 3 / 2;
+//pub const num_pages: usize = 1;
 
 // TODO actually alloc??
 const Pages = [num_pages]struct { [page_size]u8, u64 };

@@ -31,7 +31,7 @@ fn exeExample(
     // TODO could skip it (at least not define in example produce ok output?)
     test_z_exe.entry = .{ .symbol_name = "run" };
     test_z_exe.discard_local_symbols = true;
-    test_z_exe.link_z_notext = true;
+    test_z_exe.link_z_notext = false;
     //test_z_exe.link_z_lazy = false;
     //test_z_exe.link_z_notext = true;
     //test_z_exe.link_z_lazy = true;

@@ -12,9 +12,11 @@ const Writer = std.Io.Writer;
 
 export fn run() void {}
 
-pub const page_size: usize = 4096;
-
-pub const max_pages: usize = 100;
+// reduce size to fit in stack (defaults to 8k).
+pub const page_size: usize = 40;
+pub const max_pages: usize = 8;
+//pub const page_size: usize = 4096;
+//pub const max_pages: usize = 100;
 
 pub const num_pages: usize = max_pages * 3 / 2;
 //pub const num_pages: usize = 1;
@@ -49,10 +51,46 @@ const MainExt = struct {
         a5: Reg,
     ) callconv(.c) ReturnTy {
         _ = .{ a0, a1, a2, a3, a4, a5 };
+        //        var rng = SmallRng.init(0);
+        //        const pages = generatePages(&rng);
+        //        const fmt_msg = "{} {} {} {}";
+        //        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
+        //        // Touch random pages until we ran out of exported pages.
+        //        // Compute checksums and append them to the program output.
+        //        for (0..num_pages) |_| {
+        //            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
+        //            const data = &pages[j][0];
+        //            const expected_checksum = pages[j][1];
+        //            const actual_checksum = pageChecksum(data);
+        //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
+        //            if (comptime servicez.is_freestanding) {
+        //                //if (actual_checksum != expected_checksum) {
+        //                var writer = consoleDataWriter(&buffer);
+        //                // TODO proper error?
+        //                writer.print(fmt_msg, fmt_param) catch unreachable;
+        //            } else {
+        //                //    var buffer: [64]u8 = undefined;
+        //                //    const bw, _ = lockStderrWriter(&buffer);
+        //                //    defer unlockStderrWriter();
+        //                //    nosuspend bw.print(fmt, args) catch return;
+        //                std.debug.print(fmt_msg, fmt_param);
+        //            }
+        //        }
+
+        //var bb: [9]u8 = undefined;
+        //const b = "helloword";
+        //for (0..9) |i| {
+        //    bb[i] = b[i];
+        //}
+        //bb[0] = 0;
         const bytes: []const u8 = "helloword"[0..];
         const stream: servicez.ConsoleStream = .stdout;
+        //const bytes_ptr: *const u8 = @ptrCast(&bb[0]);
         const bytes_ptr: *const u8 = @ptrCast(bytes);
+        //_ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(9), 0, 0, 0);
         _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
+
+        // TODO next alloc then run on allocated memory the problematic loops.
 
         return 0;
     }

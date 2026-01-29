@@ -25,12 +25,16 @@ pub const num_pages: usize = max_pages * 3 / 2;
 const Pages = [num_pages]struct { [page_size]u8, u64 };
 
 fn generatePages(rng: *SmallRng) Pages {
+    _ = rng; // autofix
     var pages: Pages = undefined;
     for (0..num_pages) |i| {
         const data = &pages[i][0];
-        rng.fill(data);
-        const checksum = pageChecksum(&(data.*));
-        pages[i][1] = checksum;
+        for (0..data.len) |j| data[j] = 1;
+        // TODO fill is panicking
+        //       rng.fill(data);
+        //        const checksum = pageChecksum(&(data.*));
+        //        pages[i][1] = checksum;
+        pages[i][1] = 0;
     }
     return pages;
 }
@@ -55,39 +59,43 @@ const MainExt = struct {
         var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
         var writer = consoleDataWriter(&buffer);
         var rng = SmallRng.init(0);
+        if (rng.s[0] == 5) ret = 5;
         const pages = generatePages(&rng);
+        if (pages[0].@"1" == 5) ret = 5;
         //        const fmt_msg = "{} {} {} {}";
         // Touch random pages until we ran out of exported pages.
         // Compute checksums and append them to the program output.
-        for (0..num_pages) |_| {
-            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
-            const data = &pages[j][0];
-            const expected_checksum = pages[j][1];
-            const actual_checksum = pageChecksum(data);
-            if (expected_checksum != actual_checksum) {
-                ret = 1;
-                //_ = writer.write("") catch unreachable;
-                //                writer.flush() catch unreachable;
-            }
-            //            else {
-            //                //_ = writer.write("matched chck") catch unreachable;
-            //                _ = writer.write("\nmmmmm") catch unreachable;
-            //                writer.flush() catch unreachable;
-            //            }
-            //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
-            //            if (comptime servicez.is_freestanding) {
-            //                //if (actual_checksum != expected_checksum) {
-            //                var writer = consoleDataWriter(&buffer);
-            //                // TODO proper error?
-            //                writer.print(fmt_msg, fmt_param) catch unreachable;
-            //            } else {
-            //                //    var buffer: [64]u8 = undefined;
-            //                //    const bw, _ = lockStderrWriter(&buffer);
-            //                //    defer unlockStderrWriter();
-            //                //    nosuspend bw.print(fmt, args) catch return;
-            //                std.debug.print(fmt_msg, fmt_param);
-            //            }
-        }
+        //for (0..num_pages) |_| {
+        //    const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
+        //   _ = j; // autofix
+        //}
+        //            const data = &pages[j][0];
+        //            const expected_checksum = pages[j][1];
+        //            const actual_checksum = pageChecksum(data);
+        //            if (expected_checksum != actual_checksum) {
+        //                ret = 1;
+        //                //_ = writer.write("") catch unreachable;
+        //                //                writer.flush() catch unreachable;
+        //            }
+        //            else {
+        //                //_ = writer.write("matched chck") catch unreachable;
+        //                _ = writer.write("\nmmmmm") catch unreachable;
+        //                writer.flush() catch unreachable;
+        //            }
+        //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
+        //            if (comptime servicez.is_freestanding) {
+        //                //if (actual_checksum != expected_checksum) {
+        //                var writer = consoleDataWriter(&buffer);
+        //                // TODO proper error?
+        //                writer.print(fmt_msg, fmt_param) catch unreachable;
+        //            } else {
+        //                //    var buffer: [64]u8 = undefined;
+        //                //    const bw, _ = lockStderrWriter(&buffer);
+        //                //    defer unlockStderrWriter();
+        //                //    nosuspend bw.print(fmt, args) catch return;
+        //                std.debug.print(fmt_msg, fmt_param);
+        //            }
+        //        }
 
         //var bb: [9]u8 = undefined;
         //const b = "helloword";

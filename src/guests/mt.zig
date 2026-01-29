@@ -134,35 +134,16 @@ const WriteConsoleData = struct {
         a4: Reg,
         a5: Reg,
     ) callconv(.c) ReturnTy {
-        _ = a3; // autofix
-        _ = a4; // autofix
-        _ = a5; // autofix
         const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
-        //// force ordering of reg (wth)
-        _ = asm volatile ("mv a0, %[stream]\n"
-            : [ret] "={ra}" (-> ReturnTy),
-            : [stream] "r" (stream),
-            : .{});
 
         _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
-            : [ret] "={ra}" (-> ReturnTy), // ra
-            : [stream] "r" (stream), // rdi
-              [address] "r" (address), //rax x2
-              [len] "r" (len), // rdx
-              //[a3] "{rbp}" (a3), // rbp
-              //              [a4] "{r10}" (a4), // r10
-              //              [a5] "{r11}" (a5), // r11
-
-              //            : [ret] "={ra}" (-> ReturnTy), // TODO rather void ret or use other reg . x1
-              //            : [stream] "{rdi}" (stream), //
-              //              [address] "{rax}" (address),
-              //              [len] "{rdx}" (len),
-              //              [a3] "rbp" (a3),
-              //              [a4] "r10" (a4),
-              //              [a5] "r11" (a5),
-              //              [a3] "r" (a3),
-              //              [a4] "r" (a4),
-              //              [a5] "r" (a5),
+            : [ret] "={A0}" (-> ReturnTy), // ra
+            : [stream] "{A0}" (stream),
+              [address] "{A1}" (address),
+              [len] "{A2}" (len), // rdx
+              [a3] "{A3}" (a3),
+              [a4] "{A4}" (a4),
+              [a5] "{A5}" (a5),
             : .{});
 
         return 0;

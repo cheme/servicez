@@ -139,19 +139,19 @@ const WriteConsoleData = struct {
         _ = a5; // autofix
         const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
         //// force ordering of reg (wth)
-//        _ = asm volatile ("mv a0, %[stream]\n"
-//            : [ret] "={ra}" (-> ReturnTy),
-//            : [stream] "{rdi}" (stream),
-//            : .{});
+        _ = asm volatile ("mv a0, %[stream]\n"
+            : [ret] "={ra}" (-> ReturnTy),
+            : [stream] "r" (stream),
+            : .{});
 
         _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
-            : [ret] "={ra}" (-> ReturnTy), // TODO rather void ret or use other reg ra
-            : [stream] "{rdi}" (stream), // ra
-              [address] "{rax}" (address), //rag
-              [len] "{rdx}" (len),
-              [a3] "{rbp}" (a3),
-              [a4] "{r10}" (a4),
-              [a5] "{r11}" (a5),
+            : [ret] "={ra}" (-> ReturnTy), // ra
+            : [stream] "r" (stream), // rdi
+              [address] "r" (address), //rax x2
+              [len] "r" (len), // rdx
+              //[a3] "{rbp}" (a3), // rbp
+              //              [a4] "{r10}" (a4), // r10
+              //              [a5] "{r11}" (a5), // r11
 
               //            : [ret] "={ra}" (-> ReturnTy), // TODO rather void ret or use other reg . x1
               //            : [stream] "{rdi}" (stream), //

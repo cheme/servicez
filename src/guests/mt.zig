@@ -138,17 +138,25 @@ const WriteConsoleData = struct {
         _ = a4; // autofix
         _ = a5; // autofix
         const filler_64 = if (servicez.riscv32) "" else "\n\n.4byte 0";
-        // force ordering of reg (wth)
-        _ = asm volatile ("mv a0, %[stream]\n"
-            : [ret] "=rdi" (-> ReturnTy),
-            : [stream] "r" (stream),
-            : .{});
+        //// force ordering of reg (wth)
+        //_ = asm volatile ("mv a0, %[stream]\n"
+        //    : [ret] "=rdi" (-> ReturnTy),
+        //    : [stream] "r" (stream),
+        //    : .{});
 
         _ = asm volatile (".insn r 0xb, 0, 0, zero, zero, zero\n\n.4byte " ++ std.fmt.comptimePrint("{}", .{index}) ++ filler_64 ++ "\n"
-            : [ret] "=rdi" (-> ReturnTy), // TODO rather void ret or use other reg
-            : [stream] "r" (stream),
-              [address] "r" (address),
-              [len] "r" (len),
+            : [ret] "={ra}" (-> ReturnTy), // TODO rather void ret or use other reg
+            : [stream] "{rdi}" (stream), //
+              [address] "{rax}" (address),
+              [len] "{rdx}" (len),
+
+              //            : [ret] "={ra}" (-> ReturnTy), // TODO rather void ret or use other reg . x1
+              //            : [stream] "{rdi}" (stream), //
+              //              [address] "{rax}" (address),
+              //              [len] "{rdx}" (len),
+              //              [a3] "rbp" (a3),
+              //              [a4] "r10" (a4),
+              //              [a5] "r11" (a5),
               //              [a3] "r" (a3),
               //              [a4] "r" (a4),
               //              [a5] "r" (a5),

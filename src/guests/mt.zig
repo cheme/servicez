@@ -50,32 +50,44 @@ const MainExt = struct {
         a4: Reg,
         a5: Reg,
     ) callconv(.c) ReturnTy {
+        var ret: ReturnTy = 0;
         _ = .{ a0, a1, a2, a3, a4, a5 };
-        //        var rng = SmallRng.init(0);
-        //        const pages = generatePages(&rng);
+        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
+        var writer = consoleDataWriter(&buffer);
+        var rng = SmallRng.init(0);
+        const pages = generatePages(&rng);
         //        const fmt_msg = "{} {} {} {}";
-        //        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
-        //        // Touch random pages until we ran out of exported pages.
-        //        // Compute checksums and append them to the program output.
-        //        for (0..num_pages) |_| {
-        //            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
-        //            const data = &pages[j][0];
-        //            const expected_checksum = pages[j][1];
-        //            const actual_checksum = pageChecksum(data);
-        //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
-        //            if (comptime servicez.is_freestanding) {
-        //                //if (actual_checksum != expected_checksum) {
-        //                var writer = consoleDataWriter(&buffer);
-        //                // TODO proper error?
-        //                writer.print(fmt_msg, fmt_param) catch unreachable;
-        //            } else {
-        //                //    var buffer: [64]u8 = undefined;
-        //                //    const bw, _ = lockStderrWriter(&buffer);
-        //                //    defer unlockStderrWriter();
-        //                //    nosuspend bw.print(fmt, args) catch return;
-        //                std.debug.print(fmt_msg, fmt_param);
-        //            }
-        //        }
+        // Touch random pages until we ran out of exported pages.
+        // Compute checksums and append them to the program output.
+        for (0..num_pages) |_| {
+            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
+            const data = &pages[j][0];
+            const expected_checksum = pages[j][1];
+            const actual_checksum = pageChecksum(data);
+            if (expected_checksum != actual_checksum) {
+                ret = 1;
+                //_ = writer.write("") catch unreachable;
+                //                writer.flush() catch unreachable;
+            }
+            //            else {
+            //                //_ = writer.write("matched chck") catch unreachable;
+            //                _ = writer.write("\nmmmmm") catch unreachable;
+            //                writer.flush() catch unreachable;
+            //            }
+            //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
+            //            if (comptime servicez.is_freestanding) {
+            //                //if (actual_checksum != expected_checksum) {
+            //                var writer = consoleDataWriter(&buffer);
+            //                // TODO proper error?
+            //                writer.print(fmt_msg, fmt_param) catch unreachable;
+            //            } else {
+            //                //    var buffer: [64]u8 = undefined;
+            //                //    const bw, _ = lockStderrWriter(&buffer);
+            //                //    defer unlockStderrWriter();
+            //                //    nosuspend bw.print(fmt, args) catch return;
+            //                std.debug.print(fmt_msg, fmt_param);
+            //            }
+        }
 
         //var bb: [9]u8 = undefined;
         //const b = "helloword";
@@ -95,26 +107,26 @@ const MainExt = struct {
         //        const bytes2_ptr: *const u8 = @ptrCast(bytes2);
         //        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes2_ptr)), @intCast(bytes2.len), 0, 0, 0);
 
-        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
-        var writer = consoleDataWriter(&buffer);
         _ = writer.write(bytes) catch unreachable;
         writer.flush() catch unreachable;
 
         _ = writer.write(bytes) catch unreachable;
         writer.flush() catch unreachable;
         //const bytes2: []const u8 = "\naaaaabbbbb"[0..];
-        _ = writer.write("\n123") catch unreachable;
-        _ = writer.write("123") catch unreachable;
-        //_ = writer.write(bytes2) catch unreachable;
-        writer.flush() catch unreachable;
-        //                const fmt_param = .{bytes};
-        //               const fmt_msg = "{s}";
-        //              writer.print(fmt_msg, fmt_param) catch unreachable;
-        //              writer.flush() catch unreachable;
+        //        _ = writer.write("\nel") catch unreachable;
+        //        _ = writer.write("za") catch unreachable;
+        //        //_ = writer.write(bytes2) catch unreachable;
+        //        writer.flush() catch unreachable;
+
+        // TODO something in next lines induce a panic
+        //const fmt_param = .{bytes};
+        //const fmt_msg = "{s}";
+        //writer.print(fmt_msg, fmt_param) catch unreachable;
+        //writer.flush() catch unreachable;
 
         // TODO next alloc then run on allocated memory the problematic loops.
 
-        return 0;
+        return ret;
     }
 
     pub const metadata_symbol: []const u8 = "main";

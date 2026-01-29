@@ -83,12 +83,34 @@ const MainExt = struct {
         //    bb[i] = b[i];
         //}
         //bb[0] = 0;
-        const bytes: []const u8 = "helloword"[0..];
-        const stream: servicez.ConsoleStream = .stdout;
-        //const bytes_ptr: *const u8 = @ptrCast(&bb[0]);
-        const bytes_ptr: *const u8 = @ptrCast(bytes);
-        //_ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(9), 0, 0, 0);
-        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
+        //
+
+        //        const stream: servicez.ConsoleStream = .stdout;
+
+        const bytes: []const u8 = "\nhelloworld"[0..];
+        //        const bytes_ptr: *const u8 = @ptrCast(bytes);
+        //        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
+        //
+        //        const bytes2: []const u8 = "helld"[0..];
+        //        const bytes2_ptr: *const u8 = @ptrCast(bytes2);
+        //        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes2_ptr)), @intCast(bytes2.len), 0, 0, 0);
+
+        var buffer: [if (servicez.is_freestanding) 64 else 0]u8 = undefined;
+        var writer = consoleDataWriter(&buffer);
+        _ = writer.write(bytes) catch unreachable;
+        writer.flush() catch unreachable;
+
+        _ = writer.write(bytes) catch unreachable;
+        writer.flush() catch unreachable;
+        //const bytes2: []const u8 = "\naaaaabbbbb"[0..];
+        _ = writer.write("\n123") catch unreachable;
+        _ = writer.write("123") catch unreachable;
+        //_ = writer.write(bytes2) catch unreachable;
+        writer.flush() catch unreachable;
+        //                const fmt_param = .{bytes};
+        //               const fmt_msg = "{s}";
+        //              writer.print(fmt_msg, fmt_param) catch unreachable;
+        //              writer.flush() catch unreachable;
 
         // TODO next alloc then run on allocated memory the problematic loops.
 

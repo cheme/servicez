@@ -5,7 +5,7 @@ pub fn isFnType(N: type, f: anytype) bool {
     switch (@typeInfo(@TypeOf(f))) {
         .type => return N == f,
         .@"fn" => |fi| {
-            if (!fi.is_generic or fi.return_type != type or fi.is_var_args) @compileError("expect a type fn");
+            if (!fi.is_generic or fi.return_type != type or fi.attrs.varargs) @compileError("expect a type fn");
             switch (@typeInfo(N)) {
                 .@"struct", .@"union", .@"enum", .@"opaque" => {},
                 else => {

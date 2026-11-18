@@ -1,14 +1,14 @@
 //! Jam related structs.
 
 const std = @import("std");
-const ArrayListUnmanaged = std.ArrayListUnmanaged;
+const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-const AuthParam = ArrayListUnmanaged(u8);
+const AuthParam = ArrayList(u8);
 
-const Authorization = ArrayListUnmanaged(u8);
+const Authorization = ArrayList(u8);
 
-const WorkPayload = ArrayListUnmanaged(u8);
+const WorkPayload = ArrayList(u8);
 
 const CodeHash = [32]u8;
 

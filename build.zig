@@ -36,6 +36,56 @@ fn exeExample(
     //test_z_exe.link_z_notext = true;
     //test_z_exe.link_z_lazy = true;
     //test_z_exe.link_z_max_page_size =
+    // -- TODO    test_z_exe.link_data_sections = true;
+    // -- TODO test_z_exe.link_function_sections = true;
+
+    b.installArtifact(test_z_exe);
+}
+
+fn soExample(
+    b: *std.Build,
+    name: [:0]const u8,
+    main: [:0]const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    mod: *std.Build.Module,
+) void {
+    const test_z_exe = b.addLibrary(.{
+        // no dyn for riscv!!
+        .linkage = .static,
+        //.linkage = .dynamic,
+        .name = name,
+        //version: ?std.SemanticVersion = null,
+        //max_rss: u64 = 0,
+        .use_llvm = true,
+        .use_lld = true,
+        //zig_lib_dir: ?LazyPath = null,
+
+        .root_module = b.createModule(.{
+            .root_source_file = b.path(main),
+            .target = target,
+            .optimize = optimize,
+            .pic = true,
+            .strip = false,
+            .imports = &.{
+                .{ .name = "servicez", .module = mod },
+            },
+        }),
+    });
+
+    test_z_exe.link_emit_relocs = true; // emit reloc needed for polkavm linker
+    test_z_exe.pie = true;
+    test_z_exe.lto = .none;
+    // TODO could skip it (at least not define in example produce ok output?)
+    //    test_z_exe.entry = .{ .symbol_name = "run" };
+    test_z_exe.discard_local_symbols = true;
+    test_z_exe.link_z_notext = false;
+    //test_z_exe.link_z_lazy = false;
+    //test_z_exe.link_z_notext = true;
+    //test_z_exe.link_z_lazy = true;
+    //test_z_exe.link_z_max_page_size =
+    // -- TODO    test_z_exe.link_data_sections = true;
+    // -- TODO test_z_exe.link_function_sections = true;
 
     b.installArtifact(test_z_exe);
 }
@@ -51,7 +101,7 @@ pub fn build(b: *std.Build) void {
 
     exeExample(b, "test_z", "src/guests/test_z.zig", target, optimize, mod);
     exeExample(b, "example-hello-world", "src/guests/example-hello-world.zig", target, optimize, mod);
-    exeExample(b, "mt", "src/guests/mt.zig", target, optimize, mod);
+    soExample(b, "mt", "src/guests/mt.zig", target, optimize, mod);
 
     //const tools_step = b.step("tools", "Compiles all tools required in the build process");
     //tools_step.dependOn(&test_z_exe.step);

@@ -242,7 +242,7 @@ test "simple test" {
 test "simple decode" {
     const expectEqual = std.testing.expectEqual;
     const expect = std.testing.expect;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const alloc = gpa.allocator();
     defer {
         std.debug.assert(gpa.deinit() == .ok);
@@ -256,7 +256,7 @@ test "simple decode" {
     var fbs = std.Io.Reader.fixed(&encoded);
     var builder = mod_scale.Builder(AuthParams){ .in = &fbs, .instance = &result, .oalloc = alloc };
     try typeApply(AuthParams, &builder);
-    var reencoded: [ENCODED_LEN]u8 = .{0} ** ENCODED_LEN;
+    var reencoded: [ENCODED_LEN]u8 = @splat(0);
     var out = std.Io.Writer.fixed(&reencoded);
     try mod_scale.encode(AuthParams, &result, &out);
     try expectEqual(encoded.len, mod_scale.encodedLen(AuthParams, &result));

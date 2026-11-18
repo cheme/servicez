@@ -67,9 +67,9 @@ pub fn metaToExtern(meta: ExternMetadata) ExternMetadataC(meta.symbol_length) {
         if (meta.index) |i| {
             data[d_ix] = 1;
             // TODO likely byte ordering issue here
-            data[d_ix + 1] = @intCast(i << 24 >> 24);
-            data[d_ix + 2] = @intCast(i << 16 >> 24);
-            data[d_ix + 3] = @intCast(i << 8 >> 24);
+            data[d_ix + 1] = @intCast((i << 24) >> 24);
+            data[d_ix + 2] = @intCast((i << 16) >> 24);
+            data[d_ix + 3] = @intCast((i << 8) >> 24);
             data[d_ix + 4] = @intCast(i >> 24);
         } else {
             for (0..5) |i| data[d_ix + i] = 0;
@@ -146,7 +146,8 @@ pub fn exportImports(exs: []const ExportDef) void {
     }
 }
 
-pub const ConsoleStream = enum(comptime_int) {
+// TODO see if rust impl would allow 0 or 1 so can be just u1
+pub const ConsoleStream = enum(u2) {
     stdout = 1,
     stderr = 2,
 };

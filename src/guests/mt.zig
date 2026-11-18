@@ -10,8 +10,6 @@ const metaToExtern = servicez.metaToExtern;
 const ExternMetadata = servicez.ExternMetadata;
 const Writer = std.Io.Writer;
 
-export fn run() void {}
-
 // reduce size to fit in stack (defaults to 8k).
 pub const page_size: usize = 40;
 pub const max_pages: usize = 8;
@@ -25,13 +23,12 @@ pub const num_pages: usize = max_pages * 3 / 2;
 const Pages = [num_pages]struct { [page_size]u8, u64 };
 
 fn generatePages(rng: *SmallRng) Pages {
-    _ = rng; // autofix
     var pages: Pages = undefined;
     for (0..num_pages) |i| {
         const data = &pages[i][0];
         for (0..data.len) |j| data[j] = 1;
         // TODO fill is panicking
-        //       rng.fill(data);
+        rng.fill(data);
         //        const checksum = pageChecksum(&(data.*));
         //        pages[i][1] = checksum;
         pages[i][1] = 0;
@@ -62,58 +59,54 @@ const MainExt = struct {
         if (rng.s[0] == 5) ret = 5;
         const pages = generatePages(&rng);
         if (pages[0].@"1" == 5) ret = 5;
-        //        const fmt_msg = "{} {} {} {}";
+        const fmt_msg = "{} {} {} {}";
         // Touch random pages until we ran out of exported pages.
         // Compute checksums and append them to the program output.
-        //for (0..num_pages) |_| {
-        //    const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
-        //   _ = j; // autofix
-        //}
-        //            const data = &pages[j][0];
-        //            const expected_checksum = pages[j][1];
-        //            const actual_checksum = pageChecksum(data);
-        //            if (expected_checksum != actual_checksum) {
-        //                ret = 1;
-        //                //_ = writer.write("") catch unreachable;
-        //                //                writer.flush() catch unreachable;
-        //            }
-        //            else {
-        //                //_ = writer.write("matched chck") catch unreachable;
-        //                _ = writer.write("\nmmmmm") catch unreachable;
-        //                writer.flush() catch unreachable;
-        //            }
-        //            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
-        //            if (comptime servicez.is_freestanding) {
-        //                //if (actual_checksum != expected_checksum) {
-        //                var writer = consoleDataWriter(&buffer);
-        //                // TODO proper error?
-        //                writer.print(fmt_msg, fmt_param) catch unreachable;
-        //            } else {
-        //                //    var buffer: [64]u8 = undefined;
-        //                //    const bw, _ = lockStderrWriter(&buffer);
-        //                //    defer unlockStderrWriter();
-        //                //    nosuspend bw.print(fmt, args) catch return;
-        //                std.debug.print(fmt_msg, fmt_param);
-        //            }
-        //        }
+        for (0..num_pages) |_| {
+            const j = rng.random().intRangeLessThanBiased(if (servicez.riscv32) u32 else u64, 0, num_pages);
+            const data = &pages[j][0];
+            const expected_checksum = pages[j][1];
+            const actual_checksum = pageChecksum(data);
+            if (expected_checksum != actual_checksum) {
+                ret = 1;
+                //_ = writer.write("") catch unreachable;
+                //                writer.flush() catch unreachable;
+            } else {
+                //_ = writer.write("matched chck") catch unreachable;
+                //_ = writer.write("\nmmmmm") catch unreachable;
+                //writer.flush() catch unreachable;
+            }
+            const fmt_param = .{ j, @intFromPtr(data), expected_checksum, actual_checksum };
+            if (comptime servicez.is_freestanding) {
+                //if (actual_checksum != expected_checksum) {
+                //var writer = consoleDataWriter(&buffer);
+                // TODO proper error?
+                writer.print(fmt_msg, fmt_param) catch unreachable;
+            } else {
+                //    var buffer: [64]u8 = undefined;
+                //    const bw, _ = lockStderrWriter(&buffer);
+                //    defer unlockStderrWriter();
+                //    nosuspend bw.print(fmt, args) catch return;
+                std.debug.print(fmt_msg, fmt_param);
+            }
+        }
 
-        //var bb: [9]u8 = undefined;
-        //const b = "helloword";
-        //for (0..9) |i| {
-        //    bb[i] = b[i];
-        //}
-        //bb[0] = 0;
-        //
+        var bb: [9]u8 = undefined;
+        const b = "helloword";
+        for (0..9) |i| {
+            bb[i] = b[i];
+        }
+        bb[0] = 0;
 
-        //        const stream: servicez.ConsoleStream = .stdout;
+        const stream: servicez.ConsoleStream = .stdout;
 
         const bytes: []const u8 = "\nhelloworld"[0..];
-        //        const bytes_ptr: *const u8 = @ptrCast(bytes);
-        //        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
-        //
-        //        const bytes2: []const u8 = "helld"[0..];
-        //        const bytes2_ptr: *const u8 = @ptrCast(bytes2);
-        //        _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes2_ptr)), @intCast(bytes2.len), 0, 0, 0);
+        const bytes_ptr: *const u8 = @ptrCast(bytes);
+        _ = WriteConsoleData.trampoline(@intCast(@backingInt(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 0, 0, 0);
+
+        const bytes2: []const u8 = "helld"[0..];
+        const bytes2_ptr: *const u8 = @ptrCast(bytes2);
+        _ = WriteConsoleData.trampoline(@intCast(@backingInt(stream)), @intCast(@intFromPtr(bytes2_ptr)), @intCast(bytes2.len), 0, 0, 0);
 
         _ = writer.write(bytes) catch unreachable;
         writer.flush() catch unreachable;
@@ -211,7 +204,7 @@ comptime {
 
 pub fn writeConsoleData(stream: servicez.ConsoleStream, bytes: []const u8) void {
     const bytes_ptr: *const u8 = @ptrCast(bytes);
-    _ = WriteConsoleData.trampoline(@intCast(@intFromEnum(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 3, 4, 5);
+    _ = WriteConsoleData.trampoline(@intCast(@backingInt(stream)), @intCast(@intFromPtr(bytes_ptr)), @intCast(bytes.len), 3, 4, 5);
     return;
 }
 

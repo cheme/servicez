@@ -1,6 +1,6 @@
 //! scale codec rough impl, not meant to be good (should use a config def independant struct.
 const std = @import("std");
-const ArrayListUnmanaged = std.ArrayListUnmanaged;
+const ArrayList = std.ArrayList;
 
 const BoundedArray = @import("utils.zig").BoundedArray;
 const utils = @import("utils.zig");
@@ -63,7 +63,7 @@ pub const Validate = struct {
 pub fn Builder(T: type) type {
     switch (T) {
         //BoundedArray => {},
-        ArrayListUnmanaged(u8) => {
+        ArrayList(u8) => {
             return struct {
                 const Self = @This();
                 in: *std.Io.Reader,
@@ -77,7 +77,7 @@ pub fn Builder(T: type) type {
 
                 pub fn onByteSeq(self: Self, size: usize) anyerror!void {
                     const alloc = self.oalloc orelse return DecodeError.RequiresAllocator;
-                    var r = try ArrayListUnmanaged(u8).initCapacity(alloc, @intCast(size));
+                    var r = try ArrayList(u8).initCapacity(alloc, @intCast(size));
                     errdefer r.deinit(alloc);
                     r.expandToCapacity();
                     const bytes_read = try self.in.readSliceShort(r.items);
@@ -138,8 +138,8 @@ pub fn Builder(T: type) type {
                 self.instance.* = try self.in.takeInt(T, .little);
             } else {
                 const s: comptime_int = try std.math.divCeil(comptime_int, bits, 8);
-                const rbig = try self.in.takeInt(std.meta.Int(.unsigned, 8 * s), .little);
-                if (rbig > @as(std.meta.Int(.unsigned, 8 * s), std.math.maxInt(T))) {
+                const rbig = try self.in.takeInt(@Int(.unsigned, 8 * s), .little);
+                if (rbig > @as(@Int(.unsigned, 8 * s), std.math.maxInt(T))) {
                     return DecodeError.InvalidEncoding;
                 }
                 self.instance.* = @intCast(rbig);
@@ -339,7 +339,7 @@ pub fn Encoder(T: type) type {
                 try self.out.writeInt(T, self.data.*, .little);
             } else {
                 const s: comptime_int = try std.math.divCeil(comptime_int, bits, 8);
-                const T2 = std.meta.Int(.unsigned, 8 * s);
+                const T2 = @Int(.unsigned, 8 * s);
                 const data2: T2 = @intCast(self.data);
                 // TODO recheck needed to be align
                 try self.out.writeInt(T2, data2, .little);
@@ -392,7 +392,7 @@ pub const CompactInt = struct {
     };
 
     // TODO can also return shifted u6
-    pub fn compact_len(comptime L: u16, val: std.meta.Int(.unsigned, L)) u16 {
+    pub fn compact_len(comptime L: u16, val: @Int(.unsigned, L)) u16 {
         if (L <= 6) {
             return 1;
         }
@@ -420,7 +420,7 @@ pub const CompactInt = struct {
 
     }
 
-    pub fn encode(comptime L: u16, val: std.meta.Int(.unsigned, L), out: *std.Io.Writer) !void {
+    pub fn encode(comptime L: u16, val: @Int(.unsigned, L), out: *std.Io.Writer) !void {
         const s = compact_len(L, val);
         switch (s) {
             1 => {
@@ -431,19 +431,19 @@ pub const CompactInt = struct {
             2 => {
                 //0b01
                 const v: u16 = @intCast(val);
-                try out.writeInt(u16, v << 2 | 0b01, .little);
+                try out.writeInt(u16, (v << 2) | 0b01, .little);
             },
             4 => {
                 //0b10
                 const v: u32 = @intCast(val);
-                try out.writeInt(u32, v << 2 | 0b10, .little);
+                try out.writeInt(u32, (v << 2) | 0b10, .little);
             },
             else => {
                 //0b11
                 const s8: u8 = @intCast(s);
-                try out.writeAll(&.{(s8 - 1 - 4) << 2 | 0b11});
+                try out.writeAll(&.{((s8 - 1 - 4) << 2) | 0b11});
                 var val_buf = val;
-                //try out.writeInt(std.meta.Int(.unsigned, L), val, .little);
+                //try out.writeInt(@Int(.unsigned, L), val, .little);
                 for (0..s - 1) |_| {
                     const v: u8 = @intCast(val_buf & std.math.maxInt(u8));
                     try out.writeByte(v);
@@ -453,7 +453,7 @@ pub const CompactInt = struct {
         }
     }
 
-    pub fn decode(comptime L: u16, in: *std.Io.Reader) anyerror!std.meta.Int(.unsigned, L) {
+    pub fn decode(comptime L: u16, in: *std.Io.Reader) anyerror!@Int(.unsigned, L) {
         while (in.seek == in.end) try in.fillMore();
 
         const first_byte = in.buffer[in.seek];
@@ -462,7 +462,7 @@ pub const CompactInt = struct {
         switch (prefix) {
             0b00 => {
                 // 1 byte TODO pref value as const so no doc
-                return std.math.cast(std.meta.Int(.unsigned, L), first_byte >> 2) orelse Error.ValueTooBigForType;
+                return std.math.cast(@Int(.unsigned, L), first_byte >> 2) orelse Error.ValueTooBigForType;
             },
             0b01 => {
                 while (in.seek == in.end) try in.fillMore();
@@ -473,7 +473,7 @@ pub const CompactInt = struct {
                 if (v <= 0b0011_1111) {
                     return Error.InvalidEncoding;
                 }
-                return std.math.cast(std.meta.Int(.unsigned, L), v) orelse Error.ValueTooBigForType;
+                return std.math.cast(@Int(.unsigned, L), v) orelse Error.ValueTooBigForType;
             },
             0b10 => {
                 // 4 bytes
@@ -481,7 +481,7 @@ pub const CompactInt = struct {
                 if (v <= 0b0011_1111_1111_1111) {
                     return Error.InvalidEncoding;
                 }
-                return std.math.cast(std.meta.Int(.unsigned, L), v) orelse Error.ValueTooBigForType;
+                return std.math.cast(@Int(.unsigned, L), v) orelse Error.ValueTooBigForType;
             },
             0b11 => {
                 const s: u16 = (first_byte >> 2) + 4;
@@ -490,19 +490,19 @@ pub const CompactInt = struct {
                     // but rather error earlier.
                     return Error.ValueTooBigForType;
                 }
-                var result: std.meta.Int(.unsigned, L) = 0;
+                var result: @Int(.unsigned, L) = 0;
                 switch (s) {
                     inline 4...8 => |s4| {
-                        const v = try in.takeInt(std.meta.Int(.unsigned, s4 * 8), .little);
+                        const v = try in.takeInt(@Int(.unsigned, s4 * 8), .little);
                         if (v <= std.math.maxInt(u32) >> 2) {
                             return Error.InvalidEncoding;
                         }
-                        result = std.math.cast(std.meta.Int(.unsigned, L), v) orelse return Error.ValueTooBigForType;
+                        result = std.math.cast(@Int(.unsigned, L), v) orelse return Error.ValueTooBigForType;
                     },
                     9...(63 + 4) => |s4| {
                         for (0..s4) |i| {
                             while (in.seek == in.end) try in.fillMore();
-                            const b = @as(std.meta.Int(.unsigned, L), in.buffer[in.seek]);
+                            const b = @as(@Int(.unsigned, L), in.buffer[in.seek]);
                             in.seek += 1;
                             result |= b << @intCast(i * 8);
                         }
@@ -524,7 +524,7 @@ pub fn typeApply(T: type, callback: anytype) anyerror!void {
     //@compileLog(@typeName(T));
     switch (T) {
         //BoundedArray => {},
-        ArrayListUnmanaged(u8) => {
+        ArrayList(u8) => {
             // TODO not sure this onStartSeq should be part of callback
             const osize = try callback.onStartSeq();
             if (osize) |size| {
@@ -542,7 +542,7 @@ pub fn typeApply(T: type, callback: anytype) anyerror!void {
     }
     if (bounded_array == true) {
         const type_info = @typeInfo(T);
-        const buffer = type_info.@"struct".fields[0].type; // TODO assert name
+        const buffer = type_info.@"struct".field_types[0]; // TODO assert name
         const type_info_child = @typeInfo(buffer).array;
         //@compileLog(type_info_child);
         const osize = try callback.onStartSeq();
@@ -578,18 +578,18 @@ pub fn typeApply(T: type, callback: anytype) anyerror!void {
             comptime var i = 0;
             errdefer {
                 comptime var j = 0;
-                inline for (s.fields) |f| {
+                inline for (s.field_names, s.field_types) |f_name, f_type| {
                     if (j == i) {
                         break;
                     }
-                    callback.deinitFieldOnErr(f.name, f.type);
+                    callback.deinitFieldOnErr(f_name, f_type);
                     j += 1;
                 }
             }
-            inline for (s.fields) |f| {
+            inline for (s.field_names, s.field_types) |f_name, f_type| {
                 //@compileLog(f.type);
-                const inner = try callback.onField(f.name, f.type);
-                try typeApply(f.type, inner);
+                const inner = try callback.onField(f_name, f_type);
+                try typeApply(f_type, inner);
 
                 i += 1;
             }
@@ -603,6 +603,9 @@ pub fn typeApply(T: type, callback: anytype) anyerror!void {
             } else {
                 unreachable;
             }
+        },
+        .spirv => {
+            unreachable;
         },
         .vector => {
             unreachable;
@@ -656,7 +659,7 @@ pub fn seqAt(T: type, C: type, i: usize, data: *const T) *const C {
     }
 
     switch (T) {
-        ArrayListUnmanaged => return &data.items[i],
+        ArrayList => return &data.items[i],
         else => {},
     }
     const type_info = @typeInfo(T);
@@ -687,7 +690,7 @@ pub fn seqLen(T: type, data: *const T) SeqDesc {
     }
 
     switch (T) {
-        ArrayListUnmanaged(u8) => return .{
+        ArrayList(u8) => return .{
             .len = data.items.len,
             .is_fix = false,
         },
@@ -715,7 +718,7 @@ pub fn seqBytes(T: type, data: *const T) []const u8 {
     }
 
     switch (T) {
-        ArrayListUnmanaged(u8) => return data.items,
+        ArrayList(u8) => return data.items,
         else => {},
     }
     const type_info = @typeInfo(T);

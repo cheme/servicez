@@ -1,4 +1,8 @@
-zig build -Dtarget=riscv64-freestanding -Dcpu=generic_rv64+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseFast
+# gnu as rust to add elf rvc tag (could also set unix instead of freestanding to change os).
+# also we have dyn pos independant exec while rust is a dyn shared object file
+# also have a magin header not in rust .
+zig build -Dtarget=riscv64-freestanding-gnu -Dcpu=rv64i+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseFast
+# zig build -Dtarget=riscv64-freestanding -Dcpu=rv64i+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseFast
 #zig build -Dtarget=riscv64-freestanding -Dcpu=generic_rv64+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseSmall
 #zig build -Dtarget=riscv64-freestanding -Dcpu=generic_rv64+e+m+a+c+zbb+xtheadcondmov -Doptimize=ReleaseSafe # wrong dwarf
 #zig build -Dtarget=riscv64-freestanding -Dcpu=generic_rv64+e+m+a+c+zbb+xtheadcondmov-zca # substracting zca remove c too, since c implies zca should be fine
